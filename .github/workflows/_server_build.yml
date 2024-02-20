@@ -1,0 +1,68 @@
+name: '🧳 Build project'
+
+on: 
+  workflow_call:
+
+jobs:
+  build:
+    name: Build API and Documentation
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: ✅ Checkout branch
+        uses: actions/checkout@v3
+      
+      - name: 🤖 Use Node.js
+        id: setup-node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16.14.2
+          cache: npm
+
+      - name: 🧨 Install NPM dependencies
+        run: npm i
+
+      - name: Create firebase.sdk.client.key.json file
+        id: firebase-sdk-client-key
+        uses: jsdaniell/create-json@v1.2.2
+        with:
+          name: "firebase.sdk.client.key.json"
+          json: ${{ secrets.FIREBASE_SDK_CLIENT_KEY }}
+          dir: 'src/'
+
+      - name: Create firebase.sdk.key.json file
+        id: firebase-sdk-key
+        uses: jsdaniell/create-json@v1.2.2
+        with:
+          name: "firebase.sdk.key.json"
+          json: ${{ secrets.FIREBASE_SDK_KEY }}
+          dir: 'src/'
+
+      - name: Create .env file
+        run: |
+          touch functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo API_URL=${{ secrets.API_URL }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo LINKEDIN_ACCESS_TOKEN=${{ secrets.LINKEDIN_ACCESS_TOKEN }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo NUBELA_ACCESS_TOKEN=${{ secrets.NUBELA_ACCESS_TOKEN }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo LINKEDIN_USER=${{ secrets.LINKEDIN_USER }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo ALOWED_ORIGINS=${{ secrets.ALOWED_ORIGINS }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo USER_EMAIL=${{ secrets.USER_EMAIL }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo USER_PASSWORD=${{ secrets.USER_PASSWORD }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+
+      - name: 💥 Build project
+        run: npm run build
+
+      - name: Archive Production Artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: functions
+          path: |
+            functions/
+            firestore.rules
+            firebase.json
+
+      - name: Archive Production Artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: documentation
+          path: hosting/swagger

@@ -1,0 +1,54 @@
+{
+    "name": "matidiaz-api",
+    "description": "",
+    "version": "1.0.0",
+    "main": "src/index.js",
+    "scripts": {
+        "clean": "rimraf functions/src",
+        "build": "npm run build && node src/index.js",
+        "lint": "eslint .",
+        "start:shell": "npm run build && npm run shell",
+        "serve": "npx firebase emulators:start",
+        "shell": "npx firebase functions:shell",
+        "start": "npm run shell",
+        "deploy": "npm run build && firebase deploy",
+        "logs": "firebase functions:log"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/matidiaz00/portfolio_api_v1.git"
+    },
+    "author": "Matias Diaz",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/matidiaz00/portfolio_api_v1/issues"
+    },
+    "homepage": "https://github.com/matidiaz00/portfolio_api_v1#readme",
+    "dependencies": {
+        "apicache": "^1.6.3",
+        "body-parser": "^1.20.0",
+        "compression": "^1.7.4",
+        "dotenv": "^16.0.3",
+        "express": "^4.18.1",
+        "firebase": "^9.9.3",
+        "firebase-admin": "^11.0.1",
+        "firebase-functions": "^4.1.1",
+        "method-override": "^3.0.0",
+        "node-fetch": "^2.6.7",
+        "runtypes": "^6.6.0",
+        "swagger-jsdoc": "^6.2.7"
+    },
+    "devDependencies": {
+        "eslint": "^8.23.0",
+        "eslint-config-google": "^0.14.0",
+        "firebase-functions-test": "^2.3.0",
+        "firebase-tools": "^11.8.0",
+        "jasmine": "^4.3.0",
+        "jest": "^29.3.1",
+        "nyc": "^15.1.0"
+    },
+    "private": true,
+    "engines": {
+        "node": "16"
+    }
+}

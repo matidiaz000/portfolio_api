@@ -1,0 +1,89 @@
+name: '🧳 Deploy'
+
+on: 
+  workflow_call:
+
+jobs:
+  build:
+    name: Deploy to Firebase
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: ✅ Checkout branch
+        uses: actions/checkout@v3
+
+      - name: Download Artifact
+        env:
+          FIREBASE_DOCUMENTATION_TARGET_NAME: ${{ secrets.FIREBASE_DOCUMENTATION_TARGET_NAME }}
+        if: env.FIREBASE_DOCUMENTATION_TARGET_NAME != null
+        uses: actions/download-artifact@master
+        with:
+          name: documentation
+
+      - name: Download Artifact
+        uses: actions/download-artifact@master
+        with:
+          name: hosting
+
+      - name: Download Artifact
+        uses: actions/download-artifact@master
+        with:
+          name: functions
+
+      - name: Install dependencies in functions
+        run: cd functions && npm i
+
+      - name: 📝 Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SDK_KEY }}
+
+      - name: Assign project ID to Firebase config
+        run: npx firebase-tools use ${{ secrets.FIREBASE_PROJECT_ID }}
+
+      - name: Assign target to Firebase Hosting Multisite config from Documentation
+        env:
+          FIREBASE_DOCUMENTATION_TARGET_NAME: ${{ secrets.FIREBASE_DOCUMENTATION_TARGET_NAME }}
+        if: env.FIREBASE_DOCUMENTATION_TARGET_NAME != null
+        run: npx firebase-tools target:apply hosting documentation ${{ secrets.FIREBASE_DOCUMENTATION_TARGET_NAME }}
+      
+      - name: Assign target to Firebase Hosting Multisite config from Coverage Report
+        env:
+          FIREBASE_COVERAGE_TARGET_NAME: ${{ secrets.FIREBASE_COVERAGE_TARGET_NAME }}
+        if: env.FIREBASE_COVERAGE_TARGET_NAME != null
+        run: npx firebase-tools target:apply hosting coverage_report ${{ secrets.FIREBASE_COVERAGE_TARGET_NAME }}
+
+      - name: Assign target to Firebase Hosting Multisite config From E2E report
+        env:
+          FIREBASE_E2E_REPORT_TARGET_NAME: ${{ secrets.FIREBASE_E2E_REPORT_TARGET_NAME }}
+        if: env.FIREBASE_E2E_REPORT_TARGET_NAME != null
+        run: npx firebase-tools target:apply hosting e2e_report ${{ secrets.FIREBASE_E2E_REPORT_TARGET_NAME }}
+
+      - name: 🚀 Deploy to Firebase
+        run: npx firebase-tools deploy
+
+      - name: Display Server Api URL
+        run: |
+          echo Server Api: https://us-central1-${{ secrets.FIREBASE_PROJECT_ID }}.cloudfunctions.net/api
+
+      - name: Display Server Documentation URL
+        env:
+          FIREBASE_DOCUMENTATION_TARGET_NAME: ${{ secrets.FIREBASE_DOCUMENTATION_TARGET_NAME }}
+        if: env.FIREBASE_DOCUMENTATION_TARGET_NAME != null
+        run: |
+          echo Server Documentation: ${{ secrets.FIREBASE_DOCUMENTATION_TARGET_NAME }}.web.app
+
+      - name: Display Server Coverage Report URL
+        env:
+          FIREBASE_COVERAGE_TARGET_NAME: ${{ secrets.FIREBASE_COVERAGE_TARGET_NAME }}
+        if: env.FIREBASE_COVERAGE_TARGET_NAME != null
+        run: |
+          echo Server Coverage Report: ${{ secrets.FIREBASE_COVERAGE_TARGET_NAME }}.web.app
+
+      - name: Display Server End to End Report URL
+        env:
+          FIREBASE_E2E_REPORT_TARGET_NAME: ${{ secrets.FIREBASE_E2E_REPORT_TARGET_NAME }}
+        if: env.FIREBASE_E2E_REPORT_TARGET_NAME != null
+        run: |
+          echo Server End to End Report: ${{ secrets.FIREBASE_E2E_REPORT_TARGET_NAME }}.web.app

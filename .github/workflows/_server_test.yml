@@ -1,0 +1,90 @@
+name: '🧳 Unit and E2E Test'
+
+on: 
+  workflow_call:
+
+jobs:
+  build:
+    name: Unit and E2E Test project
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: ✅ Checkout branch
+        uses: actions/checkout@v3
+      
+      - name: 🤖 Use Node.js
+        id: setup-node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16.14.2
+          cache: npm
+
+      - name: Install Java for Firebase emulators
+        run: sudo apt-get update && sudo apt-get install -y openjdk-8-jdk
+
+      - name: 🧨 Install NPM dependencies
+        run: npm i
+
+      - name: 🧨 Install Functions NPM dependencies
+        run: cd functions && npm i
+
+      - name: Create firebase.sdk.client.key.json file
+        id: firebase-sdk-client-key
+        uses: jsdaniell/create-json@v1.2.2
+        with:
+          name: "firebase.sdk.client.key.json"
+          json: ${{ secrets.FIREBASE_SDK_CLIENT_KEY }}
+          dir: 'src/'
+
+      - name: Create firebase.sdk.key.json file
+        id: firebase-sdk-key
+        uses: jsdaniell/create-json@v1.2.2
+        with:
+          name: "firebase.sdk.key.json"
+          json: ${{ secrets.FIREBASE_SDK_KEY }}
+          dir: 'src/'
+
+      - name: Create main .env file
+        run: |
+          touch functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo API_URL=${{ secrets.API_URL }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo LINKEDIN_ACCESS_TOKEN=${{ secrets.LINKEDIN_ACCESS_TOKEN }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo NUBELA_ACCESS_TOKEN=${{ secrets.NUBELA_ACCESS_TOKEN }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo LINKEDIN_USER=${{ secrets.LINKEDIN_USER }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo ALOWED_ORIGINS=${{ secrets.ALOWED_ORIGINS }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo USER_EMAIL=${{ secrets.USER_EMAIL }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+          echo USER_PASSWORD=${{ secrets.USER_PASSWORD }} >> functions/.env.${{ secrets.FIREBASE_PROJECT_ID }}
+      
+      - name: 📝 Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SDK_KEY }}
+
+      - name: Cache firebase emulators
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/firebase/emulators
+          key: ${{ runner.os }}-firebase-emulators-${{ hashFiles('~/.cache/firebase/emulators/**') }}
+
+      - name: Set firebase project ID
+        run: npx firebase use ${{ secrets.FIREBASE_PROJECT_ID }}
+
+      - name: 💫 Run Unit testing
+        run: npm run test
+
+      - name: Create e2e .env file
+        run: |
+          touch e2e/settings/.env
+          echo API_URL=http://localhost:5001/${{ secrets.FIREBASE_PROJECT_ID }}/us-central1/api >> e2e/settings/.env
+          echo USER_EMAIL="${{ secrets.USER_EMAIL }}" >> e2e/settings/.env
+          echo USER_PASSWORD="${{ secrets.USER_PASSWORD }}" >> e2e/settings/.env
+
+      - name: 💫 Run End to End testing
+        run: npm run test:e2e
+
+      - name: Archive Production Artifact
+        uses: actions/upload-artifact@master
+        with:
+          name: hosting
+          path: hosting

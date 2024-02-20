@@ -1,0 +1,22 @@
+name: '🧬 Release'
+
+on:
+  push:
+    branches:
+      master
+
+jobs:
+
+  Test:
+    uses: ./.github/workflows/_server_test.yml
+    secrets: inherit
+
+  Build:
+    needs: Test
+    uses: ./.github/workflows/_server_build.yml
+    secrets: inherit
+
+  Deploy:
+    needs: Build
+    uses: ./.github/workflows/_server_deploy.yml
+    secrets: inherit
